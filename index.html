@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ruta Óptima - Recolección</title>
+
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div id="controls">
+      <div>
+        <label for="start">Dirección de inicio:</label>
+        <input type="text" id="start" placeholder="Direccion de inicio" />
+      </div>
+
+      <div>
+        <label for="waypoints">Direcciones intermedias:</label>
+        <div id="waypoints-container">
+          <!-- Inputs dinamicos se agregan aca -->
+        </div>
+        <button onclick="addWaypoint()">➕</button>
+      </div>
+
+      <div>
+        <label for="end">Dirección de destino:</label>
+        <input type="text" id="end" placeholder="Dirección de destino" />
+      </div>
+
+      <div>
+        <label>
+          Evitar autopistas
+          <input type="checkbox" id="avoidHighways" />
+        </label>
+        <label>
+          Evitar peajes
+          <input type="checkbox" id="avoidTolls" />
+        </label>
+      </div>
+
+      <button onclick="calculateRoute()">Calcular ruta</button>
+    </div>
+
+    <div id="summary" style="padding: 1rem; font-size: 1.2rem"></div>
+
+    <div id="map"></div>
+
+    <script
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAJBHzN19KcGltAd2Ijg_syAZqjtObbRK0&callback=initMap&libraries=places"
+      async
+      defer
+    ></script>
+    <script src="main.js"></script>
+  </body>
+</html>
