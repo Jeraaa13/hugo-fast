@@ -1,6 +1,8 @@
 let map;
 let directionsService;
 let directionsRenderer;
+let currentLocationMarker;
+let watchId;
 const options = {
   componentRestrictions: { country: "ar" },
 };
@@ -38,7 +40,10 @@ function initMap() {
   });
 
   directionsService = new google.maps.DirectionsService();
-  directionsRenderer = new google.maps.DirectionsRenderer({ map: map });
+  directionsRenderer = new google.maps.DirectionsRenderer({
+    map: map,
+    suppressMarkers: true, // Suprimimos los marcadores originales para usar los nuestros
+  });
 
   new google.maps.places.Autocomplete(
     document.getElementById("start"),
@@ -52,7 +57,163 @@ function initMap() {
     const routeStepsDiv = document.createElement("div");
     routeStepsDiv.id = "route-steps";
     routeStepsDiv.className = "route-steps";
-    document.getElementById("summary").after(routeStepsDiv);
+    if (document.getElementById("summary")) {
+      document.getElementById("summary").after(routeStepsDiv);
+    } else {
+      document.getElementById("map").before(routeStepsDiv);
+    }
+  }
+
+  // Configurar importación de Excel
+  setupExcelImport();
+
+  // Agregar el botón de seguimiento GPS
+  addGPSTrackingButton();
+}
+
+function addGPSTrackingButton() {
+  const controlsDiv = document.getElementById("controls");
+
+  const trackingDiv = document.createElement("div");
+  trackingDiv.className = "gps-tracking-container";
+
+  const trackingBtn = document.createElement("button");
+  trackingBtn.id = "gps-tracking-btn";
+  trackingBtn.className = "gps-tracking-button";
+  trackingBtn.textContent = "🔴 Iniciar Seguimiento GPS";
+  trackingBtn.onclick = toggleGPSTracking;
+
+  trackingDiv.appendChild(trackingBtn);
+  controlsDiv.appendChild(trackingDiv);
+}
+
+function toggleGPSTracking() {
+  const trackingBtn = document.getElementById("gps-tracking-btn");
+
+  if (trackingBtn.getAttribute("data-tracking") === "active") {
+    // Detener seguimiento
+    stopGPSTracking();
+    trackingBtn.textContent = "🔴 Iniciar Seguimiento GPS";
+    trackingBtn.setAttribute("data-tracking", "inactive");
+    trackingBtn.style.backgroundColor = "#27ae60";
+  } else {
+    // Iniciar seguimiento
+    startGPSTracking();
+    trackingBtn.textContent = "⏹️ Detener Seguimiento GPS";
+    trackingBtn.setAttribute("data-tracking", "active");
+    trackingBtn.style.backgroundColor = "#c0392b";
+  }
+}
+
+function startGPSTracking() {
+  if (navigator.geolocation) {
+    // Crear marcador inicial si no existe
+    if (!currentLocationMarker) {
+      currentLocationMarker = new google.maps.Marker({
+        map: map,
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 10,
+          fillColor: "#4285F4",
+          fillOpacity: 0.8,
+          strokeColor: "#FFFFFF",
+          strokeWeight: 2,
+        },
+        title: "Tu ubicación actual",
+      });
+    }
+
+    // Iniciar seguimiento continuo
+    watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        const latlng = { lat, lng };
+
+        // Actualizar posición del marcador
+        currentLocationMarker.setPosition(latlng);
+
+        // Centrar mapa en la posición actual
+        map.setCenter(latlng);
+
+        // Mostrar información de precisión
+        const accuracy = position.coords.accuracy;
+        currentLocationMarker.setTitle(
+          `Tu ubicación (precisión: ${Math.round(accuracy)}m)`
+        );
+      },
+      (error) => {
+        Swal.fire({
+          icon: error,
+          title: "Error de GPS",
+          text: "Error de GPS: ${getGeolocationErrorMessage(error)}",
+          confirmButtonColor: "#007bff",
+        });
+
+        stopGPSTracking();
+        const trackingBtn = document.getElementById("gps-tracking-btn");
+        trackingBtn.textContent = "🔴 Iniciar Seguimiento GPS";
+        trackingBtn.setAttribute("data-tracking", "inactive");
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 5000,
+      }
+    );
+
+    // Mostrar notificación
+    showNotification(
+      "Seguimiento GPS activado. Te estamos siguiendo en el mapa."
+    );
+  } else {
+    Swal.fire({
+      icon: warning,
+      title: "Error de GPS",
+      text: "Tu navegador no soporta geolocalización",
+      confirmButtonColor: "#007bff",
+    });
+  }
+}
+
+function stopGPSTracking() {
+  if (watchId !== undefined) {
+    navigator.geolocation.clearWatch(watchId);
+    watchId = undefined;
+
+    // Mostrar notificación
+    showNotification("Seguimiento GPS desactivado.");
+  }
+}
+
+function showNotification(message) {
+  // Crear elemento de notificación
+  const notification = document.createElement("div");
+  notification.className = "gps-notification";
+  notification.textContent = message;
+
+  // Añadir al DOM
+  document.body.appendChild(notification);
+
+  // Eliminar después de un tiempo
+  setTimeout(() => {
+    notification.classList.add("fade-out");
+    setTimeout(() => document.body.removeChild(notification), 500);
+  }, 3000);
+}
+
+function getGeolocationErrorMessage(error) {
+  switch (error.code) {
+    case error.PERMISSION_DENIED:
+      return "Permiso de ubicación denegado.";
+    case error.POSITION_UNAVAILABLE:
+      return "Información de ubicación no disponible.";
+    case error.TIMEOUT:
+      return "Se agotó el tiempo para obtener la ubicación.";
+    case error.UNKNOWN_ERROR:
+      return "Error desconocido de ubicación.";
+    default:
+      return "Error de ubicación.";
   }
 }
 
@@ -71,16 +232,31 @@ function getCurrentLocation() {
               results[0].formatted_address;
             map.setCenter(latlng);
           } else {
-            alert("No se pudo detectar la dirección exacta.");
+            Swal.fire({
+              icon: error,
+              title: "Error de Direcciones",
+              text: "No se pudo detectar la direccion exacta",
+              confirmButtonColor: "#007bff",
+            });
           }
         });
       },
       () => {
-        alert("Error al obtener ubicación.");
+        Swal.fire({
+          icon: error,
+          title: "Error de Ubicación",
+          text: "Error al obtener ubicación.",
+          confirmButtonColor: "#007bff",
+        });
       }
     );
   } else {
-    alert("Tu navegador no soporta geolocalización.");
+    Swal.fire({
+      icon: error,
+      title: "Error de Navegador",
+      text: "Tu navegador no soporta geolocalización.",
+      confirmButtonColor: "#007bff",
+    });
   }
 }
 
@@ -93,7 +269,12 @@ function calculateRoute() {
   const avoidTolls = document.getElementById("avoidTolls").checked;
 
   if (!start || !end) {
-    alert("Por favor, completá la dirección de inicio y destino.");
+    Swal.fire({
+      icon: warning,
+      title: "Faltan direcciones",
+      text: "Porfavor complete las direcciones de inicio y destino",
+      confirmButtonColor: "#007bff",
+    });
     return;
   }
 
@@ -114,6 +295,12 @@ function calculateRoute() {
 
   directionsService.route(request, (result, status) => {
     if (status === "OK") {
+      // Limpiamos marcadores anteriores
+      clearMarkers();
+
+      // Render de la ruta
+      directionsRenderer.setDirections(result);
+
       tollPoints.forEach((toll) => {
         const tollPosition = new google.maps.LatLng(toll.lat, toll.lng);
 
@@ -143,8 +330,6 @@ function calculateRoute() {
           ).innerHTML += `<br>🚧 Vas a pasar por el peaje <strong>${toll.name}</strong>`;
         }
       });
-
-      directionsRenderer.setDirections(result);
 
       let totalDistance = 0;
       let totalDuration = 0;
@@ -177,20 +362,134 @@ function calculateRoute() {
       }
 
       if (!avoidTolls && hasTolls) {
-        alert(
-          "⚠️ Esta ruta incluye peajes. Revisá el recorrido para estimar el costo."
-        );
+        Swal.fire({
+          icon: warning,
+          title: "Ruta con peajes",
+          text: "⚠️ Esta ruta incluye peajes. Revisá el recorrido para estimar el costo.",
+          confirmButtonColor: "#007bff",
+        });
       }
 
       // Mostrar secuencia de ruta para el chofer
       displayRouteSequence(result, start, end, waypoints);
+
+      // Añadimos los marcadores con números en lugar de letras
+      addSequenceMarkers(result, start, end, waypoints);
     } else {
-      alert("No se pudo calcular la ruta: " + status);
+      Swal.fire({
+        icon: error,
+        title: "Error al calcular",
+        text: "No se pudo calcular la ruta: " + status,
+        confirmButtonColor: "#007bff",
+      });
     }
   });
 }
 
-// Nueva función para mostrar la secuencia ordenada de paradas
+// Almacena los marcadores de ruta para poder eliminarlos luego
+let routeMarkers = [];
+
+function clearMarkers() {
+  // Eliminar todos los marcadores anteriores excepto el de ubicación actual
+  routeMarkers.forEach((marker) => marker.setMap(null));
+  routeMarkers = [];
+}
+
+function addSequenceMarkers(response, start, end, waypoints) {
+  const waypointOrder = response.routes[0].waypoint_order;
+  const legs = response.routes[0].legs;
+
+  // Marcador de inicio (1)
+  const startMarker = new google.maps.Marker({
+    position: legs[0].start_location,
+    map: map,
+    label: {
+      text: "1",
+      color: "white",
+      fontWeight: "bold",
+    },
+    icon: {
+      path: google.maps.SymbolPath.CIRCLE,
+      fillColor: "#27ae60",
+      fillOpacity: 1,
+      strokeColor: "white",
+      strokeWeight: 2,
+      scale: 12,
+    },
+    title: "Inicio: " + legs[0].start_address,
+  });
+
+  routeMarkers.push(startMarker);
+
+  // Marcadores para paradas intermedias
+  let stopNumber = 2;
+  waypointOrder.forEach((index, i) => {
+    // La posición del waypoint es el final del tramo correspondiente
+    const position = legs[i].end_location;
+
+    const waypointMarker = new google.maps.Marker({
+      position: position,
+      map: map,
+      label: {
+        text: stopNumber.toString(),
+        color: "white",
+        fontWeight: "bold",
+      },
+      icon: {
+        path: google.maps.SymbolPath.CIRCLE,
+        fillColor: "#3498db",
+        fillOpacity: 1,
+        strokeColor: "white",
+        strokeWeight: 2,
+        scale: 12,
+      },
+      title: "Parada " + stopNumber + ": " + legs[i].end_address,
+    });
+
+    routeMarkers.push(waypointMarker);
+    stopNumber++;
+  });
+
+  // Marcador de destino (último número)
+  const destinationMarker = new google.maps.Marker({
+    position: legs[legs.length - 1].end_location,
+    map: map,
+    label: {
+      text: stopNumber.toString(),
+      color: "white",
+      fontWeight: "bold",
+    },
+    icon: {
+      path: google.maps.SymbolPath.CIRCLE,
+      fillColor: "#c0392b",
+      fillOpacity: 1,
+      strokeColor: "white",
+      strokeWeight: 2,
+      scale: 12,
+    },
+    title: "Destino: " + legs[legs.length - 1].end_address,
+  });
+
+  routeMarkers.push(destinationMarker);
+
+  // Comprobar si inicio y destino son iguales o muy cercanos
+  if (
+    legs[0].start_location.equals(legs[legs.length - 1].end_location) ||
+    google.maps.geometry.spherical.computeDistanceBetween(
+      legs[0].start_location,
+      legs[legs.length - 1].end_location
+    ) < 50
+  ) {
+    // Ajustamos la posición del marcador de destino para que no se superpongan
+    const offsetPosition = new google.maps.LatLng(
+      legs[legs.length - 1].end_location.lat() + 0.0005,
+      legs[legs.length - 1].end_location.lng() + 0.0005
+    );
+    destinationMarker.setPosition(offsetPosition);
+  }
+}
+
+// Nueva función para mostrar la secuencia ordenada de paradas con números
 function displayRouteSequence(response, start, end, waypoints) {
   const routeStepsDiv = document.getElementById("route-steps");
   if (!routeStepsDiv) {
@@ -212,7 +511,7 @@ function displayRouteSequence(response, start, end, waypoints) {
 
   // Agregar punto de inicio
   orderedStops.push({
-    letter: "A",
+    number: 1, // Usamos números en lugar de letras
     address: start,
     isStart: true,
   });
@@ -221,14 +520,14 @@ function displayRouteSequence(response, start, end, waypoints) {
   waypointOrder.forEach((index, i) => {
     const waypointAddress = waypoints[index].location;
     orderedStops.push({
-      letter: String.fromCharCode(66 + i), // B, C, D, etc.
+      number: i + 2, // Comenzamos desde 2 (1 es el inicio)
       address: waypointAddress,
     });
   });
 
   // Agregar punto final
   orderedStops.push({
-    letter: String.fromCharCode(66 + waypointOrder.length),
+    number: waypointOrder.length + 2, // Último número
     address: end,
     isEnd: true,
   });
@@ -248,10 +547,10 @@ function displayRouteSequence(response, start, end, waypoints) {
       stopElement.classList.add("end-stop");
     }
 
-    // Crear círculo con letra
-    const letterCircle = document.createElement("div");
-    letterCircle.className = "letter-circle";
-    letterCircle.textContent = stop.letter;
+    // Crear círculo con número (en lugar de letra)
+    const numberCircle = document.createElement("div");
+    numberCircle.className = "letter-circle"; // Mantenemos la clase por compatibilidad
+    numberCircle.textContent = stop.number;
 
     // Crear elemento para la dirección
     const addressText = document.createElement("div");
@@ -273,12 +572,12 @@ function displayRouteSequence(response, start, end, waypoints) {
       const arrow = document.createElement("div");
       arrow.className = "stop-arrow";
       arrow.innerHTML = "↓";
-      stopElement.appendChild(letterCircle);
+      stopElement.appendChild(numberCircle);
       stopElement.appendChild(addressText);
       stopsContainer.appendChild(stopElement);
       stopsContainer.appendChild(arrow);
     } else {
-      stopElement.appendChild(letterCircle);
+      stopElement.appendChild(numberCircle);
       stopElement.appendChild(addressText);
       stopsContainer.appendChild(stopElement);
     }
@@ -287,7 +586,7 @@ function displayRouteSequence(response, start, end, waypoints) {
   routeStepsDiv.appendChild(stopsContainer);
 }
 
-// Agregar función para importar desde Excel
+// Función para importar desde Excel
 function setupExcelImport() {
   const importContainer = document.createElement("div");
   importContainer.className = "import-container";
@@ -295,7 +594,7 @@ function setupExcelImport() {
     <div class="import-section">
       <label for="excel-import">Importar direcciones desde Excel:</label>
       <input type="file" id="excel-import" accept=".xlsx, .xls, .csv" />
-      <p class="import-help">El archivo debe tener columnas: "Inicio", "Parada" por cada parada  y "Destino"</p>
+      <p class="import-help">El archivo debe tener columnas: "Inicio", "Parada" por cada parada y "Destino"</p>
     </div>
   `;
 
@@ -321,13 +620,21 @@ async function handleExcelImport(event) {
     } else if (file.name.endsWith(".xlsx") || file.name.endsWith(".xls")) {
       await processExcel(file);
     } else {
-      alert(
-        "Formato de archivo no soportado. Por favor usa Excel (.xlsx, .xls) o CSV (.csv)"
-      );
+      Swal.fire({
+        icon: error,
+        title: "Archivo no soportado",
+        text: "Formato de archivo no soportado. Por favor usa Excel (xlsx, .xls) o CSV (.csv)",
+        confirmButtonColor: "#007bff",
+      });
     }
   } catch (error) {
     console.error("Error al procesar el archivo:", error);
-    alert("Error al procesar el archivo. Verificá el formato.");
+    Swal.fire({
+      icon: error,
+      title: "Error al procesar",
+      text: "Error al procesar el archivo. Verificá el formato.",
+      confirmButtonColor: "#007bff",
+    });
   }
 }
 
@@ -345,7 +652,12 @@ async function processCSV(file) {
     const destinationIndex = headers.indexOf("destino");
 
     if (startIndex === -1 || destinationIndex === -1) {
-      alert('El CSV debe contener columnas "Inicio" y "Destino"');
+      Swal.fire({
+        icon: error,
+        title: "Faltan columnas",
+        text: "El CSV debe contener columnas 'Inicio' y 'Destino'",
+        confirmButtonColor: "#007bff",
+      });
       return;
     }
 
@@ -381,13 +693,18 @@ async function processCSV(file) {
       }
     }
 
-    alert(
-      `Direcciones importadas exitosamente:\n- Inicio: ${
-        document.getElementById("start").value
-      }\n- ${
-        document.querySelectorAll(".waypoint").length
-      } paradas intermedias\n- Destino: ${document.getElementById("end").value}`
-    );
+    Swal.fire({
+      icon: "success",
+      title: "Direcciones importadas exitosamente",
+      html: `
+        <strong>Inicio:</strong> ${document.getElementById("start").value}<br>
+        <strong>${
+          document.querySelectorAll(".waypoint").length
+        }</strong> paradas intermedia/s<br>
+        <strong>Destino:</strong> ${document.getElementById("end").value}
+      `,
+      confirmButtonColor: "#007bff",
+    });
   };
 
   reader.readAsText(file);
@@ -416,7 +733,12 @@ async function processExcel(file) {
     const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
     if (jsonData.length < 2) {
-      alert("El archivo Excel está vacío o tiene un formato inválido");
+      Swal.fire({
+        icon: error,
+        title: "Archivo Excel vacío",
+        text: `El archivo Excel está vacío o tiene un formato inválido`,
+        confirmButtonColor: "#007bff",
+      });
       return;
     }
 
@@ -427,7 +749,12 @@ async function processExcel(file) {
     const destinationIndex = headers.findIndex((h) => h.includes("destino"));
 
     if (startIndex === -1 || destinationIndex === -1) {
-      alert('El Excel debe contener columnas "Inicio" y "Destino"');
+      Swal.fire({
+        icon: error,
+        title: "Faltan columnas",
+        text: "El Excel debe contener columnas 'Inicio' y 'Destino'",
+        confirmButtonColor: "#007bff",
+      });
       return;
     }
 
@@ -465,13 +792,18 @@ async function processExcel(file) {
       });
     }
 
-    alert(
-      `Direcciones importadas exitosamente:\n- Inicio: ${
-        document.getElementById("start").value
-      }\n- ${
-        document.querySelectorAll(".waypoint").length
-      } paradas intermedias\n- Destino: ${document.getElementById("end").value}`
-    );
+    Swal.fire({
+      icon: "success",
+      title: "Direcciones importadas exitosamente",
+      html: `
+        <strong>Inicio:</strong> ${document.getElementById("start").value}<br>
+        <strong>${
+          document.querySelectorAll(".waypoint").length
+        }</strong> paradas intermedia/s<br>
+        <strong>Destino:</strong> ${document.getElementById("end").value}
+      `,
+      confirmButtonColor: "#007bff",
+    });
   };
 
   reader.readAsArrayBuffer(file);
@@ -510,37 +842,4 @@ function loadScript(src) {
     script.onerror = reject;
     document.head.appendChild(script);
   });
-}
-
-// Modificar la función initMap para incluir la configuración de importación
-function initMap() {
-  map = new google.maps.Map(document.getElementById("map"), {
-    center: { lat: -34.6037, lng: -58.3816 },
-    zoom: 12,
-  });
-
-  directionsService = new google.maps.DirectionsService();
-  directionsRenderer = new google.maps.DirectionsRenderer({ map: map });
-
-  new google.maps.places.Autocomplete(
-    document.getElementById("start"),
-    options
-  );
-  new google.maps.places.Autocomplete(document.getElementById("end"), options);
-
-  addWaypoint();
-
-  if (!document.getElementById("route-steps")) {
-    const routeStepsDiv = document.createElement("div");
-    routeStepsDiv.id = "route-steps";
-    routeStepsDiv.className = "route-steps";
-    if (document.getElementById("summary")) {
-      document.getElementById("summary").after(routeStepsDiv);
-    } else {
-      document.getElementById("map").before(routeStepsDiv);
-    }
-  }
-
-  // Configurar importación de Excel
-  setupExcelImport();
 }
