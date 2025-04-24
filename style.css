@@ -411,3 +411,45 @@ div > button:not([onclick="calculateRoute()"]):hover {
 .import-section input[type="file"]::-webkit-file-upload-button:hover {
   background-color: #e0a800;
 }
+
+/* Estilos para los marcadores avanzados */
+.marker-container {
+  cursor: pointer;
+}
+
+.marker-circle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  color: white;
+  font-weight: bold;
+  border: 2px solid white;
+}
+
+.start-marker {
+  background-color: #27ae60;
+}
+
+.waypoint-marker {
+  background-color: #3498db;
+}
+
+.end-marker {
+  background-color: #c0392b;
+}
+
+.marker-number {
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.turn-instruction {
+  padding: 8px;
+  max-width: 250px;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
+}
