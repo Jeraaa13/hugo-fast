@@ -2,49 +2,99 @@
 <html lang="es">
   <head>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&display=swap");
+    </style>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Ruta Óptima - Recolección</title>
+    <title>HUGO FAST</title>
 
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <div id="controls">
-      <div>
-        <label for="start">Dirección de inicio:</label>
-        <input type="text" id="start" placeholder="Direccion de inicio" />
+    <div class="container">
+      <div class="map-container">
+        <div id="map"></div>
       </div>
-
-      <div>
-        <label for="waypoints">Direcciones intermedias:</label>
-        <div id="waypoints-container">
-          <!-- Inputs dinamicos se agregan aca -->
+      <footer id="info-footer">
+        <div class="info-item" style="display: none">
+          🛣️ Distancia total: <strong id="distance">-</strong>
         </div>
-        <button onclick="addWaypoint()">➕</button>
-      </div>
+        <div class="info-item" style="display: none">
+          ⏱️ Tiempo estimado: <strong id="duration">-</strong>
+        </div>
+        <div class="info-item" style="display: none">
+          ⚠️ Zonas con múltiples paradas: <strong id="zones"></strong>
+        </div>
+      </footer>
 
-      <div>
-        <label for="end">Dirección de destino:</label>
-        <input type="text" id="end" placeholder="Dirección de destino" />
-      </div>
+      <div class="controls-container" id="controls">
+        <!-- Columna 1: Inicio -->
+        <div class="columna">
+          <h3>🏁 Inicio</h3>
 
-      <div>
-        <label>
-          Evitar autopistas
-          <input type="checkbox" id="avoidHighways" />
-        </label>
-        <label>
-          Evitar peajes
-          <input type="checkbox" id="avoidTolls" />
-        </label>
-      </div>
+          <label for="start">Dirección de inicio:</label>
+          <input type="text" id="start" placeholder="Dirección de inicio" />
 
-      <button onclick="calculateRouteInChunks()">Calcular ruta</button>
+          <label for="excel-import">Importar direcciones desde Excel:</label>
+          <input type="file" id="excel-import" accept=".xlsx, .xls, .csv" />
+          <small
+            >El archivo debe tener columnas: "Inicio", "Parada" y
+            "Destino".</small
+          >
+        </div>
+
+        <!-- Columna 2: Paradas -->
+        <div class="columna">
+          <h3>📍 Paradas</h3>
+
+          <label for="waypoints-container">Direcciones intermedias:</label>
+          <div id="waypoints-container" class="waypoint-container">
+            <!-- Inputs dinámicos se agregan acá -->
+          </div>
+
+          <button class="button secondary-button" onclick="addWaypoint()">
+            ➕ Agregar parada
+          </button>
+        </div>
+
+        <!-- Columna 3: Destino -->
+        <div class="columna">
+          <h3>🏁 Destino</h3>
+
+          <label for="end">Dirección de destino:</label>
+          <input type="text" id="end" placeholder="Dirección de destino" />
+
+          <h3>⚙️ Opciones</h3>
+
+          <div class="checkbox-group">
+            <label class="checkbox-item">
+              <input type="checkbox" id="avoidHighways" /> Evitar autopistas
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" id="avoidTolls" /> Evitar peajes
+            </label>
+          </div>
+
+          <div class="action-buttons">
+            <button
+              id="calculate-button"
+              class="button"
+              onclick="calculateRouteInChunks()"
+            >
+              🛣️ Calcular ruta
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div id="summary" style="padding: 1rem; font-size: 1.2rem"></div>
-
-    <div id="map"></div>
+    <div class="sequence-panel">
+      <h3 id="secuencia-title" style="display: none">
+        🔄 Secuencia de Paradas
+      </h3>
+      <div id="secuencia" class="route-steps" style="display: none"></div>
+    </div>
 
     <script
       src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCzOP_ANsWBuC5uGAVZXkND8CL8nk_Zg7k&callback=initMap&libraries=places,geometry"
