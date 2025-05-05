@@ -45,7 +45,7 @@
         </div>
 
         <!-- Columna 2: Paradas -->
-        <div class="columna">
+        <div class="columna" id="columna-paradas">
           <h3>📍 Paradas</h3>
 
           <label for="waypoints-container">Direcciones intermedias:</label>
@@ -87,20 +87,30 @@
           </div>
         </div>
       </div>
+
+      <div class="sequence-panel">
+        <h3 id="secuencia-title" style="display: none">
+          🔄 Secuencia de Paradas
+        </h3>
+        <button
+          id="exportExcelBtn"
+          class="exportar-excel-btn"
+          style="display: none; float: right"
+        >
+          📥 Exportar Excel
+        </button>
+
+        <div id="secuencia" class="route-steps" style="display: none"></div>
+      </div>
     </div>
 
-    <div class="sequence-panel">
-      <h3 id="secuencia-title" style="display: none">
-        🔄 Secuencia de Paradas
-      </h3>
-      <div id="secuencia" class="route-steps" style="display: none"></div>
-    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
+    <script src="main.js"></script>
     <script
-      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCzOP_ANsWBuC5uGAVZXkND8CL8nk_Zg7k&callback=initMap&libraries=places,geometry"
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCzOP_ANsWBuC5uGAVZXkND8CL8nk_Zg7k&libraries=places&callback=initMap"
       async
       defer
     ></script>
-    <script src="main.js"></script>
   </body>
 </html>
