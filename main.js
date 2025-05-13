@@ -19,7 +19,7 @@ function initMap() {
   map = new google.maps.Map(document.getElementById("map"), {
     center: { lat: -34.6037, lng: -58.3816 },
     zoom: 12,
-    mapTypeId: google.maps.MapTypeId.ROADMAP,
+    mapTypeControl: false,
   });
 
   directionsService = new google.maps.DirectionsService();
@@ -32,11 +32,8 @@ function initMap() {
     preserveViewport: false,
   });
 
-  new google.maps.places.Autocomplete(
-    document.getElementById("start"),
-    options
-  );
-  new google.maps.places.Autocomplete(document.getElementById("end"), options);
+  setupAutocomplete(document.getElementById("start"));
+  setupAutocomplete(document.getElementById("end"));
 
   addWaypoint();
 
@@ -44,6 +41,31 @@ function initMap() {
 }
 
 window.initMap = initMap;
+
+function setupAutocomplete(inputElement) {
+  const autocomplete = new google.maps.places.Autocomplete(inputElement, {
+    fields: ["formatted_address", "geometry", "name"],
+    componentRestrictions: { country: "ar" },
+    strictBounds: false,
+  });
+
+  autocomplete.addListener("place_changed", () => {
+    const place = autocomplete.getPlace();
+
+    if (!place.geometry || !place.formatted_address) {
+      Swal.fire({
+        icon: "error",
+        title: "Dirección no válida",
+        text: "Por favor, seleccioná una dirección válida de la lista.",
+      });
+      inputElement.value = "";
+      return;
+    }
+
+    // Opcional: actualizar el valor del input con la dirección validada
+    inputElement.value = place.formatted_address;
+  });
+}
 
 function addWaypoint() {
   const container = document.getElementById("waypoints-container");
@@ -64,7 +86,7 @@ function addWaypoint() {
   div.appendChild(removeBtn);
   container.appendChild(div);
 
-  new google.maps.places.Autocomplete(input, options);
+  setupAutocomplete(input);
 }
 
 function showNotification(message) {
@@ -95,12 +117,13 @@ function getGeolocationErrorMessage(error) {
   }
 }
 
-function calculateRoute() {
+async function calculateRoute() {
   if (!directionsService) {
     directionsService = new google.maps.DirectionsService();
   }
-  const start = document.getElementById("start").value;
-  const end = document.getElementById("end").value;
+
+  const start = document.getElementById("start").value.trim();
+  const end = document.getElementById("end").value.trim();
   const waypointInputs = document.getElementsByClassName("waypoint");
 
   const avoidHighways = document.getElementById("avoidHighways").checked;
@@ -110,16 +133,199 @@ function calculateRoute() {
     Swal.fire({
       icon: "warning",
       title: "Faltan direcciones",
-      text: "Porfavor complete las direcciones de inicio y destino",
+      text: "Por favor complete las direcciones de inicio y destino",
       confirmButtonColor: "#007bff",
     });
     return;
   }
 
-  const waypoints = Array.from(waypointInputs)
-    .map((input) => input.value.trim())
-    .filter((val) => val !== "")
-    .map((address) => ({ location: address, stopover: true }));
+  Swal.fire({
+    title: "Validando direcciones...",
+    html: "Esto puede tomar unos momentos",
+    allowOutsideClick: false,
+    didOpen: () => {
+      Swal.showLoading();
+    },
+  });
+
+  try {
+    // Construir un array con todas las direcciones: inicio, waypoints y fin
+    const rawAddresses = [start];
+    for (let input of waypointInputs) {
+      const value = input.value.trim();
+      if (value !== "") rawAddresses.push(value);
+    }
+    rawAddresses.push(end);
+
+    // Validar todas las direcciones
+    const validationResults = await Promise.all(
+      rawAddresses.map((addr) => validateAddress(addr))
+    );
+
+    const validAddresses = [];
+    const invalidAddresses = [];
+
+    validationResults.forEach((result, index) => {
+      if (result.valid) {
+        validAddresses.push(result.formattedAddress);
+      } else {
+        invalidAddresses.push({
+          address: rawAddresses[index],
+          message: result.message,
+        });
+      }
+    });
+
+    if (validAddresses.length < 2) {
+      Swal.fire({
+        icon: "error",
+        title: "No hay suficientes direcciones válidas",
+        text: "Se necesitan al menos una dirección de inicio y una de destino válidas.",
+        confirmButtonColor: "#007bff",
+      });
+      return;
+    }
+
+    if (invalidAddresses.length > 0) {
+      let errorMessage =
+        "Las siguientes direcciones son inválidas o demasiado generales, pruebe a cambiar la localidad o autocompletarlas:";
+      invalidAddresses.forEach((addr, index) => {
+        errorMessage += `<br>${index + 1}. "${addr.address}"`;
+      });
+
+      Swal.fire({
+        icon: "warning",
+        title: "Primer Validacion: Direcciones problemáticas",
+        html: errorMessage,
+        confirmButtonColor: "#007bff",
+        showCancelButton: true,
+        confirmButtonText: "Continuar sin estas direcciones",
+        cancelButtonText: "Cancelar",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          proceedWithChunks(validAddresses, avoidHighways, avoidTolls);
+        }
+      });
+      return;
+    }
+
+    proceedWithChunks(validAddresses, avoidHighways, avoidTolls);
+  } catch (error) {
+    console.error("Error al validar direcciones:", error);
+    Swal.fire({
+      icon: "error",
+      title: "Error al validar direcciones",
+      text: "Ocurrió un error al validar las direcciones. Por favor intente nuevamente.",
+      confirmButtonColor: "#007bff",
+    });
+  }
+}
+
+async function proceedWithChunks(allAddresses, avoidHighways, avoidTolls) {
+  const validationResults = await Promise.all(
+    allAddresses.map((addr) => validateAddress(addr))
+  );
+
+  const validAddresses = [];
+  const invalidAddresses = [];
+
+  validationResults.forEach((result, index) => {
+    if (result.valid) {
+      validAddresses.push(result.formattedAddress);
+    } else {
+      invalidAddresses.push({
+        address: allAddresses[index],
+        message: result.message,
+      });
+    }
+  });
+
+  if (invalidAddresses.length > 0) {
+    let errorMessage =
+      "Las siguientes direcciones son inválidas o demasiado generales, es probable que google no la este encontrando correctamente, pruebe a cambiar la localidad";
+    invalidAddresses.forEach((addr, index) => {
+      errorMessage += `<br>${index + 1}. "${addr.address}"`;
+    });
+
+    Swal.fire({
+      icon: "warning",
+      title: "Segunda validacion: Direcciones problemáticas",
+      html: errorMessage,
+      confirmButtonColor: "#007bff",
+      showCancelButton: true,
+      confirmButtonText: "Continuar sin estas direcciones",
+      cancelButtonText: "Cancelar",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        proceedWithChunks(validAddresses, avoidHighways, avoidTolls);
+        console.log("arreglar");
+      }
+    });
+    return;
+  }
+  allAddresses = validAddresses;
+  // Si pasa la validación, seguimos con el procesamiento de chunks
+  if (allAddresses.length <= 25) {
+    const waypoints = allAddresses.slice(1, -1).map((address) => ({
+      location: address,
+      stopover: true,
+    }));
+
+    proceedWithRoute(
+      allAddresses[0],
+      allAddresses[allAddresses.length - 1],
+      waypoints,
+      avoidHighways,
+      avoidTolls
+    );
+    return;
+  }
+
+  Swal.fire({
+    title: "Calculando ruta extensa",
+    html: `Procesando ${allAddresses.length} direcciones en varios tramos...`,
+    allowOutsideClick: false,
+    allowEscapeKey: false,
+    didOpen: () => {
+      Swal.showLoading();
+    },
+  });
+
+  const chunks = divideIntoChunks(allAddresses);
+
+  let combinedResults = {
+    routes: [
+      {
+        legs: [],
+        overview_path: [],
+        warnings: [],
+        waypoint_order: [],
+      },
+    ],
+  };
+
+  console.log("Iniciando segunda validación");
+  processChunks(chunks, 0, combinedResults, avoidHighways, avoidTolls);
+
+  document.getElementById("secuencia-title").style.display = "block";
+  document.getElementById("exportExcelBtn").style.display = "block";
+  document.getElementById("secuencia").style.display = "block";
+
+  const infoItems = document.getElementsByClassName("info-item");
+  Array.from(infoItems).forEach((item) => {
+    item.style.display = "block";
+  });
+}
+
+function proceedWithRoute(start, end, waypoints, avoidHighways, avoidTolls) {
+  Swal.fire({
+    title: "Calculando ruta...",
+    html: "Esto puede tomar unos momentos",
+    allowOutsideClick: false,
+    didOpen: () => {
+      Swal.showLoading();
+    },
+  });
 
   const request = {
     origin: start,
@@ -137,9 +343,10 @@ function calculateRoute() {
   };
 
   directionsService.route(request, (result, status) => {
+    Swal.close();
+
     if (status === "OK") {
       clearMarkers();
-
       clearDirectionalArrows();
 
       directionsRenderer.setMap(null);
@@ -223,7 +430,6 @@ function calculateRoute() {
         });
       }
 
-      console.log("displayRouteSequence");
       displayRouteSequence(result, start, end, waypoints);
 
       addSequenceMarkersForFullRoute(result);
@@ -255,81 +461,69 @@ function calculateRoute() {
   });
 }
 
-function calculateRouteInChunks() {
-  if (!directionsService) {
-    directionsService = new google.maps.DirectionsService();
-  }
-  const start = document.getElementById("start").value;
-  const end = document.getElementById("end").value;
-  const waypointInputs = document.getElementsByClassName("waypoint");
-
-  const avoidHighways = document.getElementById("avoidHighways").checked;
-  const avoidTolls = document.getElementById("avoidTolls").checked;
-
-  if (!start || !end) {
-    Swal.fire({
-      icon: "warning",
-      title: "Faltan direcciones",
-      text: "Por favor complete las direcciones de inicio y destino",
-      confirmButtonColor: "#007bff",
-    });
-    return;
-  }
-
-  // Recopilamos todas las direcciones en orden
-  let allAddresses = [start];
-
-  Array.from(waypointInputs).forEach((input) => {
-    const address = input.value.trim();
-    if (address !== "") {
-      allAddresses.push(address);
+function validateAddress(address) {
+  return new Promise((resolve) => {
+    if (!address || address.trim() === "") {
+      resolve({ valid: false, message: "Dirección vacía" });
+      return;
     }
-  });
 
-  allAddresses.push(end);
+    const geocoder = new google.maps.Geocoder();
 
-  // Si tenemos menos de 25 direcciones, usamos el método normal
-  if (allAddresses.length <= 25) {
-    calculateRoute();
-    return;
-  }
-
-  Swal.fire({
-    title: "Calculando ruta extensa",
-    html: `Procesando ${allAddresses.length} direcciones en varios tramos...`,
-    allowOutsideClick: false,
-    allowEscapeKey: false,
-    didOpen: () => {
-      Swal.showLoading();
-    },
-  });
-
-  // Dividimos las direcciones en chunks
-  const chunks = divideIntoChunks(allAddresses);
-
-  // Preparamos el objeto para los resultados combinados
-  let combinedResults = {
-    routes: [
+    geocoder.geocode(
       {
-        legs: [],
-        overview_path: [],
-        warnings: [],
-        waypoint_order: [],
+        address: address,
+        componentRestrictions: {
+          country: "ar",
+        },
       },
-    ],
-  };
+      (results, status) => {
+        if (status === google.maps.GeocoderStatus.OK && results.length > 0) {
+          const result = results[0];
+          const formatted = result.formatted_address;
 
-  // Iniciamos el procesamiento de chunks
-  processChunks(chunks, 0, combinedResults, avoidHighways, avoidTolls);
+          console.log(result);
 
-  // Mostramos la UI para la ruta
-  document.getElementById("secuencia-title").style.display = "block";
-  document.getElementById("exportExcelBtn").style.display = "block";
-  document.getElementById("secuencia").style.display = "block";
-
-  const infoItems = document.getElementsByClassName("info-item");
-  Array.from(infoItems).forEach((item) => {
-    item.style.display = "block";
+          if (result.partial_match == true) {
+            console.log("ASD");
+            resolve({
+              valid: false,
+              message: `La dirección "${address}" no tiene suficiente detalle o Google no la puede encontrar`,
+              formattedAddress: formatted,
+              originalAddress: address,
+            });
+          } else {
+            resolve({
+              valid: true,
+              formattedAddress: formatted,
+              originalAddress: address,
+              location: result.geometry.location,
+            });
+          }
+        } else {
+          let errorMsg = "Error desconocido";
+          switch (status) {
+            case google.maps.GeocoderStatus.ZERO_RESULTS:
+              errorMsg = `No se pudo encontrar la dirección "${address}"`;
+              break;
+            case google.maps.GeocoderStatus.OVER_QUERY_LIMIT:
+              errorMsg = "Límite de consultas excedido, intente más tarde";
+              break;
+            case google.maps.GeocoderStatus.REQUEST_DENIED:
+              errorMsg = "Solicitud denegada";
+              break;
+            case google.maps.GeocoderStatus.INVALID_REQUEST:
+              errorMsg = "Solicitud inválida";
+              break;
+          }
+          resolve({
+            valid: false,
+            message: errorMsg,
+            originalAddress: address,
+          });
+        }
+      }
+    );
   });
 }
 
@@ -379,6 +573,24 @@ function processChunks(
 
   const chunk = chunks[index];
 
+  const validationPromises = chunk.map((address) => validateAddress(address));
+
+  Promise.all(validationPromises).then((validationResults) => {
+    const validAddresses = validationResults
+      .filter((result) => result.valid)
+      .map((result) => result.formattedAddress);
+
+    // Si tenemos menos de 2 direcciones válidas, no podemos procesar este chunk
+    if (validAddresses.length < 2) {
+      Swal.fire({
+        icon: "warning",
+        title: "Problema con las direcciones",
+        text: `No hay suficientes direcciones válidas en el grupo ${index + 1}`,
+      });
+      return;
+    }
+  });
+
   if (!chunk || chunk.length < 2) {
     console.warn(`Chunk ${index} inválido, se salta`);
     processChunks(
@@ -423,7 +635,7 @@ function processChunks(
     destination: chunkEnd,
     waypoints: chunkWaypoints,
     travelMode: google.maps.TravelMode.DRIVING,
-    optimizeWaypoints: true, // Solo optimizamos el primer chunk
+    optimizeWaypoints: true,
     avoidHighways: avoidHighways,
     avoidTolls: avoidTolls,
     provideRouteAlternatives: false,
@@ -435,6 +647,7 @@ function processChunks(
 
   setTimeout(() => {
     directionsService.route(request, (result, status) => {
+      console.log(result);
       if (status === "OK" && result) {
         // Para el primer chunk, agregamos todos los legs
         if (index === 0) {
