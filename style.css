@@ -509,3 +509,21 @@ input[type="text"]:focus {
 .exportar-excel-btn:hover {
   background-color: #d4e9ff;
 }
+
+.waypoint-wrapper {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.waypoint-wrapper input {
+  flex: 1;
+  margin-right: 8px;
+}
+
+.delete-waypoint {
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+}
