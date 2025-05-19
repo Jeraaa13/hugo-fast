@@ -46,6 +46,8 @@ function initAutocomplete() {
   inputs.forEach((input) => {
     new google.maps.places.Autocomplete(input, options);
   });
+
+  addWaypoint();
 }
 
 function calculateRoute() {
@@ -630,10 +632,7 @@ function enhanceRouteDisplay(results) {
       <div class="legend-color" style="background-color: #0047AB;"></div>
       <div class="legend-text">Ruta principal</div>
     </div>
-    <div class="legend-item">
-      <div class="legend-color" style="background-color: #c0392b;"></div>
-      <div class="legend-text">Tramo final</div>
-    </div>
+
   `;
 
   // Removemos la leyenda anterior si existe
@@ -1060,13 +1059,7 @@ function addSequenceMarkersForFullRoute(results) {
 
   if (clusters.length > 0) {
     const legendDiv = document.createElement("div");
-    legendDiv.className = "map-legend";
-    legendDiv.innerHTML = `
-      <div class="legend-item">
-        <div class="legend-color" style="background-color: #FFA500; opacity: 0.4; border: 1px solid #FF8C00;"></div>
-        <div class="legend-text">Múltiples paradas cercanas (Hover para ver detalles)</div>
-      </div>
-    `;
+
     document.getElementById("map").appendChild(legendDiv);
   }
 
@@ -1171,6 +1164,7 @@ function createArrowMarker(position, nextPoint, isSignificantTurn) {
 
   directionArrows.push(arrow);
 }
+
 function displayRouteSequence(response, start, end, waypoints) {
   let routeStepsDiv = document.getElementById("secuencia");
 
