@@ -7,9 +7,28 @@ let directionArrows = [];
 let routeMarkers = [];
 let currentOrderedStops = [];
 
-const tollPoints = [
-  { lat: -34.7188, lng: -58.2669, name: "Peaje Dock Sud" },
-  { lat: -34.8502, lng: -58.0047, name: "Peaje Hudson" },
+let km;
+let mins;
+
+const peajes = [
+  {
+    nombre: "Peaje Dock Sud Ascendente",
+    lat: -34.651155040455954,
+    lng: -58.353644040522624,
+  },
+  {
+    nombre: "Peaje Dock Sud a CABA",
+    lat: -34.65123482293849,
+    lng: -58.35287492843962,
+  },
+  {
+    nombre: "Peaje Hudson",
+    lat: -34.789,
+    lng: -58.233,
+  },
+  { nombre: "Peaje Retiro", lat: -34.581, lng: -58.37 },
+  { nombre: "Peaje Avellaneda", lat: -34.651, lng: -58.366 },
+  // Agrega más peajes según sea necesario
 ];
 
 function initMap() {
@@ -27,6 +46,8 @@ function initMap() {
   setupExcelImport();
 
   initAutocomplete();
+
+  agregarPeajesAlMapa(map);
 }
 
 function initAutocomplete() {
@@ -48,6 +69,25 @@ function initAutocomplete() {
   });
 
   addWaypoint();
+}
+
+function agregarPeajesAlMapa(map) {
+  peajes.forEach((peaje) => {
+    const marker = new google.maps.Marker({
+      position: { lat: peaje.lat, lng: peaje.lng },
+      map: map,
+      title: peaje.nombre,
+      icon: "https://maps.google.com/mapfiles/ms/icons/blue-dot.png", // Puedes personalizar el icono
+    });
+
+    const infoWindow = new google.maps.InfoWindow({
+      content: `<strong>${peaje.nombre}</strong><br>Tarifa: $${peaje.tarifa}`,
+    });
+
+    marker.addListener("click", () => {
+      infoWindow.open(map, marker);
+    });
+  });
 }
 
 function calculateRoute() {
@@ -128,7 +168,7 @@ function calculateRoute() {
 
         directionsRenderer.setDirections(result);
 
-        tollPoints.forEach((toll) => {
+        peajes.forEach((toll) => {
           const tollPosition = new google.maps.LatLng(toll.lat, toll.lng);
 
           const isOnRoute = result.routes[0].overview_path.some((pathPoint) => {
@@ -468,11 +508,12 @@ function displayCombinedRoute(combinedResults) {
     totalDuration += leg.duration.value;
   });
 
-  const km = (totalDistance / 1000).toFixed(1);
-  const mins = Math.round(totalDuration / 60);
-
+  km = (totalDistance / 1000).toFixed(1);
+  mins = Math.round(totalDuration / 60);
   document.getElementById("distance").textContent = `${km} km`;
   document.getElementById("duration").textContent = `${mins} minutos`;
+
+  calcularCostoTotal(km, mins);
 
   checkTollPointsOnRoute(combinedResults);
 
@@ -766,7 +807,9 @@ function isSharpTurn() {
 }
 
 function checkTollPointsOnRoute(results) {
-  tollPoints.forEach((toll) => {
+  const peajesPasados = [];
+
+  peajes.forEach((toll) => {
     const tollPosition = new google.maps.LatLng(toll.lat, toll.lng);
 
     const isOnRoute = results.routes[0].overview_path.some((pathPoint) => {
@@ -780,22 +823,62 @@ function checkTollPointsOnRoute(results) {
     });
 
     if (isOnRoute) {
+      // Evitar duplicados
+      if (!peajesPasados.some((p) => p.nombre === toll.nombre)) {
+        peajesPasados.push(toll);
+      }
+
+      // Mostrar marcador
       const tollMarker = new google.maps.Marker({
         position: tollPosition,
         map: map,
-        title: toll.name,
+        title: toll.nombre,
         icon: "https://maps.google.com/mapfiles/ms/icons/blue-dot.png",
       });
 
       routeMarkers.push(tollMarker);
 
-      document.getElementById(
-        "summary"
-      ).innerHTML += `<br>🚧 Vas a pasar por el peaje <strong>${toll.name}</strong>`;
+      console.log("🚧 Vas a pasar por el peaje, ", toll.nombre);
     }
   });
-}
 
+  // Crear inputs en el HTML con estructura mejorada
+  const container = document.getElementById("peajes-container");
+  container.innerHTML = ""; // Limpiar antes de crear nuevos
+
+  if (peajesPasados.length > 0) {
+    // Agregar título de la sección
+    const titulo = document.createElement("div");
+    titulo.classList.add("peajes-title");
+    titulo.textContent = "Peajes en la ruta";
+    container.appendChild(titulo);
+
+    // Crear grid container para los peajes
+    const peajesGrid = document.createElement("div");
+    peajesGrid.classList.add("peajes-grid");
+
+    peajesPasados.forEach((toll, index) => {
+      const grupo = document.createElement("div");
+      grupo.classList.add("toll-group");
+      grupo.innerHTML = `
+        <label><strong>${toll.nombre}</strong></label>
+        <div class="toll-input-row">
+          <div class="toll-input-group">
+            <label>Tarifa:</label>
+            <input type="number" name="tarifa-${index}" placeholder="Ingrese tarifa" step="0.01" min="0" />
+          </div>
+          <div class="toll-input-group">
+            <label>Veces que pasa:</label>
+            <input type="number" name="veces-${index}" placeholder="ej: 2" step="1" min="1" value="1" />
+          </div>
+        </div>
+      `;
+      peajesGrid.appendChild(grupo);
+    });
+
+    container.appendChild(peajesGrid);
+  }
+}
 function displayFullRouteSequence(results) {
   const start = document.getElementById("start").value;
   const end = document.getElementById("end").value;
@@ -1452,3 +1535,89 @@ function exportToExcel() {
   XLSX.writeFile(workbook, "secuencia_ruta.xlsx");
 }
 //#endregion
+
+function calcularCostoCombustible(distanciaKm, consumoPor100Km, costoPorLitro) {
+  const litrosConsumidos = (distanciaKm / 100) * consumoPor100Km;
+  return litrosConsumidos * costoPorLitro;
+}
+
+function calcularCostoJornal(duracionMinutos, jornalPorHora) {
+  const horas = duracionMinutos / 60;
+  return horas * jornalPorHora;
+}
+
+function calcularCostoTotal(distanciaKm, duracionMinutos) {
+  distanciaKm = parseFloat(distanciaKm);
+  duracionMinutos = parseFloat(duracionMinutos);
+
+  const consumoPor100Km = parseFloat(
+    document.getElementById("consumoCamion").value
+  );
+  const costoPorLitro = parseFloat(document.getElementById("costoKm").value);
+  const jornalPorHora = parseFloat(
+    document.getElementById("jornalChofer").value
+  );
+
+  const litrosConsumidos = (distanciaKm / 100) * consumoPor100Km;
+  const costoCombustible = litrosConsumidos * costoPorLitro;
+  const horas = duracionMinutos / 60;
+  const costoJornal = horas * jornalPorHora;
+
+  // 🔢 Calcular peajes desde los inputs
+  let costoPeajes = 0;
+  let detallePeajes = "";
+  const peajesContainer = document.getElementById("peajes-container");
+  const gruposPeaje = peajesContainer.querySelectorAll(".toll-group");
+
+  gruposPeaje.forEach((grupo) => {
+    const inputs = grupo.querySelectorAll("input");
+    const nombre = grupo.querySelector("label")?.textContent || "Peaje";
+    const tarifa = parseFloat(inputs[0].value) || 0;
+    const veces = parseInt(inputs[1].value) || 0;
+    const subtotal = tarifa * veces;
+
+    if (veces > 0) {
+      detallePeajes += `- ${nombre.trim()}: $${tarifa} × ${veces} = $${subtotal.toFixed(
+        2
+      )}<br>`;
+    }
+
+    costoPeajes += subtotal;
+  });
+
+  const costoTotal = costoCombustible + costoJornal + costoPeajes;
+
+  // Mostrar costo total
+  document.getElementById(
+    "costoTotal"
+  ).textContent = `Costo Total: $${costoTotal.toFixed(2)}`;
+
+  // Armar detalle
+  const detalleHTML = `
+    <strong>Detalle del cálculo:</strong><br>
+    - Distancia: ${distanciaKm.toFixed(1)} km<br>
+    - Combustible: ${litrosConsumidos.toFixed(
+      2
+    )} L × $${costoPorLitro} = $${costoCombustible.toFixed(2)}<br>
+    - Tiempo: ${duracionMinutos.toFixed(1)} min = ${horas.toFixed(
+    2
+  )} h × $${jornalPorHora} = $${costoJornal.toFixed(2)}<br>
+    - Peajes:<br>${detallePeajes || "Ninguno<br>"}
+    <hr>
+    <strong>Total:</strong> $${costoTotal.toFixed(2)}
+  `;
+
+  // Insertar en contenedor de detalle
+  const detalleDiv = document.getElementById("detalleCostos");
+  detalleDiv.innerHTML = detalleHTML;
+  detalleDiv.style.display = "block"; // Mostrar automáticamente al calcular
+}
+
+document.getElementById("btnCalcularCosto").addEventListener("click", () => {
+  calcularCostoTotal(km, mins);
+});
+
+function toggleDetalleCostos() {
+  const detalle = document.getElementById("detalleCostos");
+  detalle.style.display = detalle.style.display === "none" ? "block" : "none";
+}

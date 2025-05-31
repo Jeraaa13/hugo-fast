@@ -17,15 +17,62 @@
         <div id="map"></div>
       </div>
       <footer id="info-footer">
-        <div class="info-item" style="display: none">
-          🛣️ Distancia total: <strong id="distance">-</strong>
+        <!-- Fila 1: Información de la ruta -->
+        <div class="info-row">
+          <div class="info-item" style="display: none">
+            🛣️ Distancia total: <strong id="distance">-</strong>
+          </div>
+          <div class="info-item" style="display: none">
+            ⏱️ Tiempo estimado: <strong id="duration">-</strong>
+          </div>
+          <div class="info-item" style="display: none">
+            ⚠️ Zonas con múltiples paradas: <strong id="zones">-</strong>
+          </div>
         </div>
-        <div class="info-item" style="display: none">
-          ⏱️ Tiempo estimado: <strong id="duration">-</strong>
+
+        <!-- Fila 2: Costos variables -->
+        <div class="costos-variables">
+          <div class="costo-input-group">
+            <label for="consumoCamion"
+              >Consumo del camión por c/ 100KM (Litros)</label
+            >
+            <input type="number" id="consumoCamion" step="1" value="0" />
+          </div>
+          <div class="costo-input-group">
+            <label for="costoKm">Costo por litro</label>
+            <input type="number" id="costoKm" step="1" value="0" />
+          </div>
+          <div class="costo-input-group">
+            <label for="jornalChofer">Jornal del Chofer</label>
+            <input type="number" id="jornalChofer" step="1" value="0" />
+          </div>
         </div>
-        <div class="info-item" style="display: none">
-          ⚠️ Zonas con múltiples paradas: <strong id="zones"></strong>
+
+        <!-- Fila 3: Peajes (se muestra dinámicamente) -->
+        <div id="peajes-container"></div>
+
+        <!-- Fila 4: Costo total, botón y detalle -->
+        <div class="costo-final-row">
+          <p
+            id="costoTotal"
+            style="cursor: pointer"
+            onclick="toggleDetalleCostos()"
+          >
+            Costo Total: $0.00
+          </p>
+          <button id="btnCalcularCosto">Calcular costo total</button>
         </div>
+
+        <div
+          id="detalleCostos"
+          style="
+            display: none;
+            background-color: #f1f1f1;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
+          "
+        ></div>
       </footer>
 
       <div class="controls-container" id="controls">

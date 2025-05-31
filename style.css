@@ -527,3 +527,699 @@ input[type="text"]:focus {
   cursor: pointer;
   font-size: 18px;
 }
+
+#peajes-container {
+  margin-top: 20px;
+  padding: 10px;
+}
+
+.toll-group {
+  border: 1px solid #ccc;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 5px;
+}
+
+/* Estilos para la sección de peajes */
+#peajes-container {
+  margin-top: 20px;
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 12px;
+  border: 1px solid #e9ecef;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+#peajes-container:empty {
+  display: none;
+}
+
+.toll-group {
+  background-color: #fff;
+  border: 1px solid #ddd;
+  padding: 20px;
+  margin-bottom: 15px;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.3s ease;
+}
+
+.toll-group:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.toll-group:last-child {
+  margin-bottom: 0;
+}
+
+.toll-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #333;
+  font-size: 14px;
+}
+
+.toll-group label strong {
+  color: #2c3e50;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.toll-group label strong::before {
+  content: "🚧";
+  margin-right: 8px;
+  font-size: 18px;
+}
+
+.toll-group input[type="number"] {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-bottom: 12px;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  background-color: #fafafa;
+}
+
+.toll-group input[type="number"]:focus {
+  border-color: #3498db;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+  background-color: #fff;
+}
+
+.toll-group input[type="number"]:last-child {
+  margin-bottom: 0;
+}
+
+/* Estilos para inputs con mejor organización */
+.toll-input-row {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 10px;
+}
+
+.toll-input-group {
+  flex: 1;
+}
+
+.toll-input-group label {
+  margin-bottom: 5px;
+  font-size: 13px;
+  color: #555;
+}
+
+.toll-input-group input {
+  margin-bottom: 0;
+}
+
+/* Título de la sección de peajes */
+.peajes-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+}
+
+.peajes-title::before {
+  content: "💰";
+  margin-right: 10px;
+  font-size: 20px;
+}
+
+/* Estilos responsive para peajes */
+@media (max-width: 768px) {
+  .toll-input-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  #peajes-container {
+    padding: 15px;
+  }
+
+  .toll-group {
+    padding: 15px;
+  }
+}
+
+/* Estilos para la sección de costos completa */
+.costos {
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 25px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e9ecef;
+  margin: 20px 0;
+}
+
+.costos > div[name] {
+  margin-bottom: 20px;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #3498db;
+}
+
+.costos label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 14px;
+}
+
+.costos input[type="number"] {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  background-color: #fff;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.costos input[type="number"]:focus {
+  border-color: #3498db;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+/* Estilos específicos para cada sección de costo */
+.costos div[name="consumoCamion"] {
+  border-left-color: #e74c3c;
+}
+
+.costos div[name="consumoCamion"] label::before {
+  content: "⛽ ";
+  font-size: 16px;
+}
+
+.costos div[name="costoKm"] {
+  border-left-color: #f39c12;
+}
+
+.costos div[name="costoKm"] label::before {
+  content: "💰 ";
+  font-size: 16px;
+}
+
+.costos div[name="jornalChofer"] {
+  border-left-color: #27ae60;
+}
+
+.costos div[name="jornalChofer"] label::before {
+  content: "👨‍💼 ";
+  font-size: 16px;
+}
+
+/* Costo total */
+#costoTotal {
+  background-color: #2c3e50;
+  color: white;
+  padding: 20px;
+  border-radius: 10px;
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+  margin: 20px 0;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+#costoTotal::before {
+  content: "💵 ";
+  font-size: 20px;
+}
+
+/* Botón calcular costo */
+#btnCalcularCosto {
+  width: 100%;
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  color: white;
+  border: none;
+  padding: 15px;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
+}
+
+#btnCalcularCosto:hover {
+  background: linear-gradient(135deg, #2980b9, #1f618d);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(52, 152, 219, 0.4);
+}
+
+#btnCalcularCosto:active {
+  transform: translateY(0);
+}
+
+#btnCalcularCosto::before {
+  content: "🧮 ";
+  margin-right: 8px;
+}
+
+/* Estilos para la sección de peajes */
+#peajes-container {
+  margin-top: 20px;
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 12px;
+  border: 1px solid #e9ecef;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+#peajes-container:empty {
+  display: none;
+}
+
+.toll-group {
+  background-color: #fff;
+  border: 1px solid #ddd;
+  padding: 20px;
+  margin-bottom: 15px;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.3s ease;
+}
+
+.toll-group:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.toll-group:last-child {
+  margin-bottom: 0;
+}
+
+.toll-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #333;
+  font-size: 14px;
+}
+
+.toll-group label strong {
+  color: #2c3e50;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.toll-group label strong::before {
+  content: "🚧";
+  margin-right: 8px;
+  font-size: 18px;
+}
+
+.toll-group input[type="number"] {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-bottom: 12px;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  background-color: #fafafa;
+}
+
+.toll-group input[type="number"]:focus {
+  border-color: #3498db;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+  background-color: #fff;
+}
+
+.toll-group input[type="number"]:last-child {
+  margin-bottom: 0;
+}
+
+/* Estilos para inputs con mejor organización */
+.toll-input-row {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 10px;
+}
+
+.toll-input-group {
+  flex: 1;
+}
+
+.toll-input-group label {
+  margin-bottom: 5px;
+  font-size: 13px;
+  color: #555;
+}
+
+.toll-input-group input {
+  margin-bottom: 0;
+}
+
+/* Título de la sección de peajes */
+.peajes-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+}
+
+.peajes-title::before {
+  content: "💰";
+  margin-right: 10px;
+  font-size: 20px;
+}
+
+/* Estilos responsive para peajes y costos */
+@media (max-width: 768px) {
+  .toll-input-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  #peajes-container {
+    padding: 15px;
+  }
+
+  .toll-group {
+    padding: 15px;
+  }
+
+  .costos {
+    padding: 15px;
+  }
+
+  .costos > div[name] {
+    padding: 12px;
+  }
+
+  #costoTotal {
+    font-size: 16px;
+    padding: 15px;
+  }
+}
+
+/* Layout principal del footer de información */
+#info-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+  background-color: #f5f8fa;
+  border-top: 1px solid #ddd;
+  margin-top: 20px;
+  font-family: "Nunito", sans-serif;
+}
+
+/* Fila 1: Información de la ruta (distancia, tiempo, zonas) */
+.info-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 30px;
+  flex-wrap: wrap;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  font-size: 16px;
+  background: #ffffff;
+  padding: 12px 18px;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  min-width: 180px;
+  justify-content: center;
+}
+
+/* Fila 2: Costos variables (3 inputs en línea) */
+.costos-variables {
+  display: flex;
+  gap: 20px;
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.costo-input-group {
+  flex: 1;
+  min-width: 200px;
+}
+
+.costo-input-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 14px;
+  border-left: 4px solid;
+  padding-left: 12px;
+}
+
+.costo-input-group:nth-child(1) label {
+  border-left-color: #e74c3c;
+}
+
+.costo-input-group:nth-child(1) label::before {
+  content: "⛽ ";
+  margin-right: 5px;
+}
+
+.costo-input-group:nth-child(2) label {
+  border-left-color: #f39c12;
+}
+
+.costo-input-group:nth-child(2) label::before {
+  content: "💰 ";
+  margin-right: 5px;
+}
+
+.costo-input-group:nth-child(3) label {
+  border-left-color: #27ae60;
+}
+
+.costo-input-group:nth-child(3) label::before {
+  content: "👨‍💼 ";
+  margin-right: 5px;
+}
+
+.costo-input-group input[type="number"] {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  background-color: #fafafa;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.costo-input-group input[type="number"]:focus {
+  border-color: #3498db;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+  background-color: #fff;
+}
+
+/* Fila 3: Peajes (si existen) */
+#peajes-container {
+  background-color: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+#peajes-container:empty {
+  display: none;
+}
+
+.peajes-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+}
+
+.peajes-title::before {
+  content: "🚧 ";
+  margin-right: 8px;
+  font-size: 20px;
+}
+
+.peajes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 15px;
+}
+
+.toll-group {
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  padding: 15px;
+  border-radius: 8px;
+  border-left: 4px solid #f39c12;
+}
+
+.toll-group label strong {
+  color: #2c3e50;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.toll-group label strong::before {
+  content: "💰";
+  margin-right: 6px;
+  font-size: 16px;
+}
+
+.toll-input-row {
+  display: flex;
+  gap: 12px;
+}
+
+.toll-input-group {
+  flex: 1;
+}
+
+.toll-input-group label {
+  margin-bottom: 5px;
+  font-size: 13px;
+  color: #555;
+  font-weight: 600;
+}
+
+.toll-input-group input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  background-color: #fff;
+  transition: border-color 0.3s ease;
+}
+
+.toll-input-group input:focus {
+  border-color: #3498db;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.15);
+}
+
+/* Fila 4: Costo total y botón */
+.costo-final-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+#costoTotal {
+  flex: 1;
+  background: linear-gradient(135deg, #2c3e50, #34495e);
+  color: white;
+  padding: 18px;
+  border-radius: 10px;
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+  margin: 0;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+#costoTotal::before {
+  content: "💵 ";
+  font-size: 20px;
+  margin-right: 8px;
+}
+
+#btnCalcularCosto {
+  flex: 0 0 200px;
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  color: white;
+  border: none;
+  padding: 18px 24px;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
+}
+
+#btnCalcularCosto:hover {
+  background: linear-gradient(135deg, #2980b9, #1f618d);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(52, 152, 219, 0.4);
+}
+
+#btnCalcularCosto::before {
+  content: "🧮 ";
+  margin-right: 8px;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .costos-variables {
+    flex-wrap: wrap;
+  }
+
+  .costo-input-group {
+    min-width: 280px;
+  }
+
+  .peajes-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .info-row {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .costos-variables {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .costo-input-group {
+    min-width: auto;
+  }
+
+  .toll-input-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .costo-final-row {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  #btnCalcularCosto {
+    flex: none;
+    width: 100%;
+  }
+
+  #costoTotal {
+    font-size: 16px;
+    padding: 15px;
+  }
+}
