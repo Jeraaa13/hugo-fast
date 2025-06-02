@@ -17,18 +17,313 @@ const peajes = [
     lng: -58.353644040522624,
   },
   {
-    nombre: "Peaje Dock Sud a CABA",
+    nombre: "Peaje Dock Sud Descendente",
     lat: -34.65123482293849,
     lng: -58.35287492843962,
   },
   {
-    nombre: "Peaje Hudson",
-    lat: -34.789,
-    lng: -58.233,
+    nombre: "Peaje Hudson Ascendente",
+    lat: -34.77390937366943,
+    lng: -58.16302829792403,
   },
-  { nombre: "Peaje Retiro", lat: -34.581, lng: -58.37 },
-  { nombre: "Peaje Avellaneda", lat: -34.651, lng: -58.366 },
-  // Agrega más peajes según sea necesario
+  {
+    nombre: "Peaje Hudson Descendente",
+    lat: -34.77449810523014,
+    lng: -58.16358973217845,
+  },
+
+  {
+    nombre: "Peaje Parque Avellaneda Ascendente",
+    lat: -34.647508469357724,
+    lng: -58.477764288327755,
+  },
+  {
+    nombre: "Peaje Parque Avellaneda Descendente",
+    lat: -34.64827193563145,
+    lng: -58.47802714478606,
+  },
+  {
+    nombre: "Peaje Dellepiane Norte",
+    lat: -34.64787537114166,
+    lng: -58.46429628036962,
+  },
+  {
+    nombre: "Peaje Dellepiane Sur",
+    lat: -34.65043057149817,
+    lng: -58.46598384960766,
+  },
+  {
+    nombre: "Peaje Bernal Sur Ascendente",
+    lat: -34.700922327467374,
+    lng: -58.27436156766762,
+  },
+  {
+    nombre: "Peaje Bernal Sur Descendente",
+    lat: -34.70130155746828,
+    lng: -58.274972452521006,
+  },
+  {
+    nombre: "Peaje Bajada Manuel Alberti",
+    lat: -34.62526756659423,
+    lng: -58.40013364060768,
+  },
+  {
+    nombre: "Peaje Quilmes Ascendente",
+    lat: -34.716083645753145,
+    lng: -58.23644115318498,
+  },
+  {
+    nombre: "Peaje Quilmes Descendente",
+    lat: -34.71689738156256,
+    lng: -58.23665959119328,
+  },
+  {
+    nombre: "Peaje Illia",
+    lat: -34.57482876994301,
+    lng: -58.392585951808755,
+  },
+  {
+    nombre: "Peaje Ricchieri Ascendente",
+    lat: -34.6992593580437,
+    lng: -58.49557318595048,
+  },
+  {
+    nombre: "Peaje Ricchieri Descendente",
+    lat: -34.69884143852219,
+    lng: -58.49631907826611,
+  },
+  {
+    nombre: "Peaje Ituzaingo Acceso Oeste Ascendente",
+    lat: -34.63109152593334,
+    lng: -58.676032335689044,
+  },
+  {
+    nombre: "Peaje Ituzaingo Acceso Oeste Descendente",
+    lat: -34.63131663931416,
+    lng: -58.67608597986421,
+  },
+  {
+    nombre: "Peaje Debenedetti Ascendente",
+    lat: -34.512983278168555,
+    lng: -58.52089571296799,
+  },
+  {
+    nombre: "Peaje Debenedetti Descendente",
+    lat: -34.51320183424595,
+    lng: -58.52234247119008,
+  },
+  {
+    nombre: "Peaje Hermanos Montgolfier Descendente",
+    lat: -34.63238950909032,
+    lng: -58.623727201483995,
+  },
+  {
+    nombre: "Peaje Derqui Ascendente",
+    lat: -34.63208151399117,
+    lng: -58.611029098284206,
+  },
+  {
+    nombre: "Peaje Derqui Descendente",
+    lat: -34.632907972590935,
+    lng: -58.611188808214685,
+  },
+  {
+    nombre: "Peaje Berazategui Ascendente",
+    lat: -34.753777061199415,
+    lng: -58.189780569852786,
+  },
+  {
+    nombre: "Peaje Berazategui Descendente",
+    lat: -34.75375526985829,
+    lng: -58.191690432437966,
+  },
+  {
+    nombre: "Peaje Autopista Ezeiza - Cañuelas Ascendente",
+    lat: -34.85410854867222,
+    lng: -58.55131091002847,
+  },
+  {
+    nombre: "Peaje Autopista Ezeiza - Cañuelas Descendente",
+    lat: -34.85394084136365,
+    lng: -58.55153774858375,
+  },
+  {
+    nombre: "Peaje Ezeiza",
+    lat: -34.83209634967084,
+    lng: -58.5084996011532,
+  },
+  {
+    nombre: "Peaje Marquez Ascendente",
+    lat: -34.49802959572529,
+    lng: -58.55067121750534,
+  },
+  {
+    nombre: "Peaje Marquez Descendente",
+    lat: -34.4987407245012,
+    lng: -58.55116808698454,
+  },
+  {
+    nombre: "Peaje Acceso Norte Campana Ascendente",
+    lat: -34.455586488336266,
+    lng: -58.693508329580496,
+  },
+  {
+    nombre: "Peaje Acceso Norte Campana Descedente",
+    lat: -34.45930453169078,
+    lng: -58.691004865729326,
+  },
+  {
+    nombre: "Peaje Ruta 197 Ascendente",
+    lat: -34.47687349999944,
+    lng: -58.65653401803042,
+  },
+  {
+    nombre: "Peaje Ruta 197 Descendente",
+    lat: -34.477492603372305,
+    lng: -58.65693634934416,
+  },
+  {
+    nombre: "Peaje Ruta 202 Ascendente",
+    lat: -34.48579101315916,
+    lng: -58.60957304685416,
+  },
+  {
+    nombre: "Peaje Ruta 202 Descendente",
+    lat: -34.48645868879903,
+    lng: -58.608645002623796,
+  },
+  {
+    nombre: "Peaje Donovan",
+    lat: -34.708152360443215,
+    lng: -58.50335971127166,
+  },
+  {
+    nombre: "Peaje Lujan Acceso Norte Ascendente",
+    lat: -34.579901252282426,
+    lng: -59.007645800599306,
+  },
+  {
+    nombre: "Peaje Lujan Acceso Norte Descendente",
+    lat: -34.58008167690324,
+    lng: -59.0075136215938,
+  },
+  {
+    nombre: "Peaje RP24 Salida Malvinas",
+    lat: -34.60209031455361,
+    lng: -58.900941301567435,
+  },
+  {
+    nombre: "Peaje Larena Ascendente",
+    lat: -34.40285464303526,
+    lng: -59.0135942410743,
+  },
+  {
+    nombre: "Peaje Larena Descendente",
+    lat: -34.403226434830636,
+    lng: -59.0141199540403,
+  },
+  {
+    nombre: "Peaje Zárate Descendente",
+    lat: -34.11804118481649,
+    lng: -59.01144850617044,
+  },
+  {
+    nombre: "Peaje Zárate Ascendente",
+    lat: -34.11817057921349,
+    lng: -59.01128583127235,
+  },
+  {
+    nombre: "Peaje Ramal Pilar Ruta 8 Ascendente",
+    lat: -34.460933471151264,
+    lng: -58.70875819857204,
+  },
+  {
+    nombre: "Peaje Ramal Pilar Ruta 8 Descendente",
+    lat: -34.46134289755136,
+    lng: -58.708835863593904,
+  },
+  {
+    nombre: "Peaje Buen Ayre Oeste Ascendente",
+    lat: -34.6151051820667,
+    lng: -58.71925608407828,
+  },
+  {
+    nombre: "Peaje Buen Ayre Oeste Descendente",
+    lat: -34.61506624556987,
+    lng: -58.71967850550895,
+  },
+  {
+    nombre: "Peaje Ascendente Au Ramal A Tigre Ascendente",
+    lat: -34.485792644892534,
+    lng: -58.55962892905329,
+  },
+  {
+    nombre: "Peaje Descendente Au Ramal A Tigre Descendente",
+    lat: -34.48593579550404,
+    lng: -58.55987477418415,
+  },
+  {
+    nombre: "Peaje Buen Ayre Norte Ascendente",
+    lat: -34.503374371452374,
+    lng: -58.58978439294346,
+  },
+  {
+    nombre: "Peaje Buen Ayre Norte Descendente",
+    lat: -34.50343184155106,
+    lng: -58.58935523954213,
+  },
+
+  {
+    nombre: "Peaje Barcala Ascendente",
+    lat: -34.63203689302824,
+    lng: -58.664625109932174,
+  },
+  {
+    nombre: "Peaje Au Acceso Oeste Descendente",
+    lat: -34.62782790921963,
+    lng: -58.70376212943351,
+  },
+  {
+    nombre: "Peaje Au Acceso Oeste Ascendente",
+    lat: -34.62848120343611,
+    lng: -58.702238634866,
+  },
+  {
+    nombre: "Peaje Buen Ayre Descendente",
+    lat: -34.48803228932309,
+    lng: -58.590926880218504,
+  },
+  {
+    nombre: "Peaje Bs. As. - Sta. Fe / Corredor Panamericano 1 Ascendente",
+    lat: -34.101109188427,
+    lng: -59.15011130560385,
+  },
+  {
+    nombre: "Peaje Bs. As. - Sta. Fe / Corredor Panamericano 1 Descendente",
+    lat: -34.101257497516094,
+    lng: -59.15042896653868,
+  },
+
+  {
+    nombre: "Peaje Samborombón Ascendente",
+    lat: -35.30758969262523,
+    lng: -58.053439721236586,
+  },
+  {
+    nombre: "Peaje Samborombón Descendente",
+    lat: -35.30759752837558,
+    lng: -58.0538937792463,
+  },
+  {
+    nombre: "Peaje San Martin Ascendente",
+    lat: -34.49093278215241,
+    lng: -58.565656905288954,
+  },
+  {
+    nombre: "Peaje San Martin Descendente",
+    lat: -34.491355164895275,
+    lng: -58.56624797204152,
+  },
 ];
 
 function initMap() {
@@ -180,7 +475,7 @@ function calculateRoute() {
               google.maps.geometry.spherical.computeDistanceBetween(
                 tollPosition,
                 point
-              ) < 500
+              ) < 100
             );
           });
 
@@ -809,18 +1104,19 @@ function isSharpTurn() {
 function checkTollPointsOnRoute(results) {
   const peajesPasados = [];
 
+  // Crear la polyline de la ruta
+  const path = results.routes[0].overview_path;
+  const polyline = new google.maps.Polyline({ path: path });
+
   peajes.forEach((toll) => {
     const tollPosition = new google.maps.LatLng(toll.lat, toll.lng);
 
-    const isOnRoute = results.routes[0].overview_path.some((pathPoint) => {
-      const point = new google.maps.LatLng(pathPoint.lat(), pathPoint.lng());
-      return (
-        google.maps.geometry.spherical.computeDistanceBetween(
-          tollPosition,
-          point
-        ) < 500
-      );
-    });
+    // Usar isLocationOnEdge para ver si el peaje está sobre la ruta
+    const isOnRoute = google.maps.geometry.poly.isLocationOnEdge(
+      tollPosition,
+      polyline,
+      0.0001 // ~100 metros de tolerancia
+    );
 
     if (isOnRoute) {
       // Evitar duplicados
@@ -861,24 +1157,30 @@ function checkTollPointsOnRoute(results) {
       const grupo = document.createElement("div");
       grupo.classList.add("toll-group");
       grupo.innerHTML = `
-        <label><strong>${toll.nombre}</strong></label>
-        <div class="toll-input-row">
-          <div class="toll-input-group">
-            <label>Tarifa:</label>
-            <input type="number" name="tarifa-${index}" placeholder="Ingrese tarifa" step="0.01" min="0" />
-          </div>
-          <div class="toll-input-group">
-            <label>Veces que pasa:</label>
-            <input type="number" name="veces-${index}" placeholder="ej: 2" step="1" min="1" value="1" />
-          </div>
-        </div>
-      `;
+  <label><strong>${toll.nombre}</strong></label>
+  <div class="toll-input-row">
+    <div class="toll-input-group">
+      <label>Tarifa:</label>
+      <input type="number" name="tarifa-${index}" placeholder="Ingrese tarifa" step="0.01" min="0" />
+    </div>
+    <div class="toll-input-group">
+      <label>Veces que pasa:</label>
+      <input type="number" name="veces-${index}" placeholder="ej: 2" step="1" min="1" value="1" />
+    </div>
+    <div class="toll-input-group">
+      <label>Excluir:</label>
+      <input type="checkbox" name="excluir-${index}" />
+    </div>
+  </div>
+`;
+
       peajesGrid.appendChild(grupo);
     });
 
     container.appendChild(peajesGrid);
   }
 }
+
 function displayFullRouteSequence(results) {
   const start = document.getElementById("start").value;
   const end = document.getElementById("end").value;
@@ -1563,7 +1865,6 @@ function calcularCostoTotal(distanciaKm, duracionMinutos) {
   const horas = duracionMinutos / 60;
   const costoJornal = horas * jornalPorHora;
 
-  // 🔢 Calcular peajes desde los inputs
   let costoPeajes = 0;
   let detallePeajes = "";
   const peajesContainer = document.getElementById("peajes-container");
@@ -1574,15 +1875,15 @@ function calcularCostoTotal(distanciaKm, duracionMinutos) {
     const nombre = grupo.querySelector("label")?.textContent || "Peaje";
     const tarifa = parseFloat(inputs[0].value) || 0;
     const veces = parseInt(inputs[1].value) || 0;
-    const subtotal = tarifa * veces;
+    const excluir = inputs[2].checked;
 
-    if (veces > 0) {
+    if (!excluir && veces > 0) {
+      const subtotal = tarifa * veces;
+      costoPeajes += subtotal;
       detallePeajes += `- ${nombre.trim()}: $${tarifa} × ${veces} = $${subtotal.toFixed(
         2
       )}<br>`;
     }
-
-    costoPeajes += subtotal;
   });
 
   const costoTotal = costoCombustible + costoJornal + costoPeajes;
