@@ -1,5 +1,3 @@
-import skmeans from "https://cdn.skypack.dev/skmeans";
-
 let map;
 let directionsService;
 let directionsRenderer;
