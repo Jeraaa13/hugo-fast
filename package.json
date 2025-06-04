@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "skmeans": "^0.11.3"
+  }
+}

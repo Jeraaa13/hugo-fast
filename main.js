@@ -1,8 +1,9 @@
+import skmeans from "https://cdn.skypack.dev/skmeans";
+
 let map;
 let directionsService;
 let directionsRenderer;
-let currentLocationMarker;
-let watchId;
+let geocoder;
 let directionArrows = [];
 let routeMarkers = [];
 let currentOrderedStops = [];
@@ -324,6 +325,16 @@ const peajes = [
     lat: -34.491355164895275,
     lng: -58.56624797204152,
   },
+  {
+    nombre: "Peaje Maipú Ascendente",
+    lat: -36.846694432638934,
+    lng: -57.866917918352506,
+  },
+  {
+    nombre: "Peaje Maipú Descendente",
+    lat: -36.84677739550165,
+    lng: -57.866663057623406,
+  },
 ];
 
 function initMap() {
@@ -337,6 +348,7 @@ function initMap() {
     map: map,
     suppressMarkers: false,
   });
+  geocoder = new google.maps.Geocoder();
 
   setupExcelImport();
 
@@ -463,77 +475,26 @@ function calculateRoute() {
 
         directionsRenderer.setDirections(result);
 
-        peajes.forEach((toll) => {
-          const tollPosition = new google.maps.LatLng(toll.lat, toll.lng);
-
-          const isOnRoute = result.routes[0].overview_path.some((pathPoint) => {
-            const point = new google.maps.LatLng(
-              pathPoint.lat(),
-              pathPoint.lng()
-            );
-            return (
-              google.maps.geometry.spherical.computeDistanceBetween(
-                tollPosition,
-                point
-              ) < 100
-            );
-          });
-
-          if (isOnRoute) {
-            new google.maps.Marker({
-              position: tollPosition,
-              map: map,
-              title: toll.name,
-              icon: "https://maps.google.com/mapfiles/ms/icons/blue-dot.png",
-            });
-          }
-        });
-
         let totalDistance = 0;
         let totalDuration = 0;
-        const routeLegs = result.routes[0].legs;
-
-        routeLegs.forEach((leg) => {
+        result.routes[0].legs.forEach((leg) => {
           totalDistance += leg.distance.value;
           totalDuration += leg.duration.value;
         });
 
-        const hasTolls = result.routes[0].warnings.some((warning) =>
-          warning.toLowerCase().includes("toll")
-        );
+        km = (totalDistance / 1000).toFixed(1);
+        mins = Math.round(totalDuration / 60);
 
-        const warnings = result.routes[0].warnings;
-        if (warnings.length > 0) {
-          const tolls = warnings.filter((w) =>
-            w.toLowerCase().includes("toll")
-          );
-        }
+        document.getElementById("distance").textContent = `${km} km`;
+        document.getElementById("duration").textContent = `${mins} minutos`;
 
-        if (!avoidTolls && hasTolls) {
-          Swal.fire({
-            icon: "warning",
-            title: "Ruta con peajes",
-            text: "⚠️ Esta ruta incluye peajes. Revisá el recorrido para estimar el costo.",
-            confirmButtonColor: "#007bff",
-          });
-        }
+        calcularCostoTotal(km, mins);
+
+        checkTollPointsOnRoute(result);
 
         displayRouteSequence(result, start, end, rawWaypoints);
 
         addSequenceMarkersForFullRoute(result);
-
-        const totalDistanceKm = (totalDistance / 1000).toFixed(2);
-
-        const totalDurationMinutes = Math.floor(totalDuration / 60);
-        const hours = Math.floor(totalDurationMinutes / 60);
-        const minutes = totalDurationMinutes % 60;
-
-        document.getElementById(
-          "distance"
-        ).textContent = `${totalDistanceKm} km`;
-        document.getElementById(
-          "duration"
-        ).textContent = `${hours}h ${minutes}m`;
 
         document.getElementById("exportExcelBtn").style.display = "block";
         document.getElementById("secuencia-title").style.display = "block";
@@ -553,7 +514,13 @@ function calculateRoute() {
     });
   } else {
     // 🚧 RUTA CON CHUNKS
-    calculateFullRoute(start, rawWaypoints, end, avoidHighways, avoidTolls);
+    calculateFullRouteWithClustering(
+      start,
+      rawWaypoints,
+      end,
+      avoidHighways,
+      avoidTolls
+    );
   }
 }
 
@@ -586,6 +553,255 @@ function addWaypoint() {
 
 //#region Manejo de rutas grandes
 
+async function calculateFullRouteWithClustering(
+  startAddressString, // String de dirección de inicio
+  waypointAddressStrings, // Array de strings de direcciones de waypoint
+  endAddressString, // String de dirección de fin
+  avoidHighways,
+  avoidTolls,
+  maxWaypointsPerChunk = 23 // Max waypoints que Directions API optimiza (23 + origen + destino = 25)
+) {
+  try {
+    // --- PASO 1: GEOCODIFICAR TODAS LAS DIRECCIONES ---
+    const startPoint = await geocodeAddress(startAddressString);
+    const endPoint = await geocodeAddress(endAddressString);
+
+    // Geocodificar waypoints y guardar su índice original
+    const geocodedWaypoints = await Promise.all(
+      waypointAddressStrings.map(async (addr, index) => {
+        const geocoded = await geocodeAddress(addr);
+        return {
+          ...geocoded, // Contiene 'address' y 'location' (LatLng)
+          originalIndex: index, // Muy importante para el waypoint_order final
+        };
+      })
+    );
+
+    if (geocodedWaypoints.length === 0) {
+      // Ruta simple si no hay waypoints
+      const result = await requestRoute(
+        startPoint.location,
+        [],
+        endPoint.location,
+        avoidHighways,
+        avoidTolls
+      );
+      if (result.status === "OK") {
+        displayCombinedRoute(result); // Asumiendo que displayCombinedRoute puede manejar un resultado simple
+        // ... (mostrar elementos UI)
+      } else {
+        Swal.fire({
+          icon: "error",
+          title: `Error en la ruta`,
+          text: result.status,
+        });
+      }
+      return;
+    }
+
+    // --- PASO 2: CLUSTERING DE WAYPOINTS ---
+    const numClusters = Math.ceil(
+      geocodedWaypoints.length / (maxWaypointsPerChunk - 1)
+    ); // -1 para dejar espacio al "linking point"
+    const waypointCoordinates = geocodedWaypoints.map((wp) => [
+      wp.location.lat(),
+      wp.location.lng(),
+    ]);
+
+    let clusters = []; // Array de arrays de waypoints geocodificados
+    if (geocodedWaypoints.length <= maxWaypointsPerChunk - 1) {
+      // Si caben en un solo chunk
+      clusters.push(geocodedWaypoints);
+    } else if (typeof skmeans !== "undefined") {
+      const kmeansResult = skmeans(waypointCoordinates, numClusters, "kmpp"); // kmpp para mejor inicialización
+      // Agrupar los waypoints originales según los índices de k-means
+      for (let k = 0; k < numClusters; k++) clusters.push([]);
+      kmeansResult.idxs.forEach((clusterIndex, originalWaypointArrayIndex) => {
+        clusters[clusterIndex].push(
+          geocodedWaypoints[originalWaypointArrayIndex]
+        );
+      });
+    } else {
+      // Fallback si skmeans no está disponible: chunking secuencial simple (tu método antiguo)
+      // O mostrar un error y detenerse
+      console.warn(
+        "skmeans no está disponible. Usando chunking secuencial simple como fallback."
+      );
+      let i = 0;
+      while (i < geocodedWaypoints.length) {
+        clusters.push(
+          geocodedWaypoints.slice(i, i + (maxWaypointsPerChunk - 1))
+        );
+        i += maxWaypointsPerChunk - 1;
+      }
+    }
+
+    // --- PASO 3: ORDENAR CLUSTERS (Estrategia simple: por proximidad al último punto) ---
+    let orderedClusters = [];
+    let remainingClusters = [...clusters.filter((c) => c.length > 0)]; // Filtrar clusters vacíos
+    let currentReferenceForOrdering = startPoint.location;
+
+    while (remainingClusters.length > 0) {
+      remainingClusters.sort((a, b) => {
+        const centroidA = calculateCentroid(a);
+        const centroidB = calculateCentroid(b);
+        if (!centroidA && !centroidB) return 0;
+        if (!centroidA) return 1; // Mover clusters sin centroide (vacíos) al final
+        if (!centroidB) return -1;
+        const distA = google.maps.geometry.spherical.computeDistanceBetween(
+          currentReferenceForOrdering,
+          centroidA
+        );
+        const distB = google.maps.geometry.spherical.computeDistanceBetween(
+          currentReferenceForOrdering,
+          centroidB
+        );
+        return distA - distB;
+      });
+      const nextCluster = remainingClusters.shift();
+      orderedClusters.push(nextCluster);
+      // Actualizar la referencia para el siguiente cluster (usamos el centroide del que acabamos de añadir)
+      const centroidOfAdded = calculateCentroid(nextCluster);
+      if (centroidOfAdded) {
+        // Solo actualiza si el centroide es válido
+        currentReferenceForOrdering = centroidOfAdded;
+      }
+    }
+
+    // --- PASO 4: CALCULAR RUTA POR CHUNKS DE CLUSTERS ---
+    let combinedResults = {
+      routes: [
+        { legs: [], overview_path: [], warnings: [], waypoint_order: [] },
+      ],
+      // Guardaremos los waypoints originales ordenados aquí para la UI
+      ordered_waypoint_details: [],
+    };
+    let currentChunkOrigin = startPoint.location; // Inicia en el punto de partida real
+    let accumulatedWaypointOrderIndices = []; // Para el waypoint_order global
+
+    for (let i = 0; i < orderedClusters.length; i++) {
+      const clusterWaypoints = orderedClusters[i]; // Array de {location, originalIndex, ...}
+
+      // Preparamos los waypoints para la API (solo location)
+      const apiWaypoints = clusterWaypoints.map((wp) => ({
+        location: wp.location,
+        stopover: true,
+      }));
+
+      let chunkDestination;
+      const isLastCluster = i === orderedClusters.length - 1;
+
+      if (isLastCluster) {
+        chunkDestination = endPoint.location;
+      } else {
+        // Destino es el punto más cercano en el *siguiente* cluster,
+        // al *último punto del cluster actual* (o al centroide del actual)
+        // Para simplificar, usaremos el punto más cercano en el siguiente cluster al ORIGEN del chunk actual
+        const nextCluster = orderedClusters[i + 1];
+        const nearestInNext = findNearestPointInCluster(
+          currentChunkOrigin,
+          nextCluster
+        );
+        if (nearestInNext) {
+          chunkDestination = nearestInNext.location;
+        } else {
+          // Si el siguiente cluster está vacío o algo raro, apuntar al final general
+          console.warn(
+            "Siguiente cluster vacío o no se encontró punto cercano, apuntando al destino final."
+          );
+          chunkDestination = endPoint.location;
+        }
+      }
+
+      // console.log(`Chunk ${i}: Origin:`, currentChunkOrigin, `Waypoints: ${apiWaypoints.length}`, `Destination:`, chunkDestination);
+
+      const result = await requestRoute(
+        currentChunkOrigin,
+        apiWaypoints,
+        chunkDestination,
+        avoidHighways,
+        avoidTolls
+      );
+
+      if (result.status === "OK" && result.routes && result.routes.length > 0) {
+        const route = result.routes[0];
+
+        // Combinar legs (evitando duplicar el punto de inicio/fin si se solapan)
+        route.legs.forEach((leg, legIndex) => {
+          // Solo añadir si no es el primer leg del primer chunk Y el start_address no es el end_address del anterior
+          // O más simple: la API ya maneja la conexión
+          combinedResults.routes[0].legs.push(leg);
+        });
+
+        route.overview_path.forEach((point) =>
+          combinedResults.routes[0].overview_path.push(point)
+        );
+        route.warnings.forEach((warning) => {
+          if (!combinedResults.routes[0].warnings.includes(warning)) {
+            combinedResults.routes[0].warnings.push(warning);
+          }
+        });
+
+        // --- RECONSTRUIR WAYPOINT_ORDER GLOBAL ---
+        // route.waypoint_order es un array de índices RELATIVOS a `apiWaypoints` de ESTE CHUNK
+        if (route.waypoint_order) {
+          route.waypoint_order.forEach((chunkWaypointIndex) => {
+            // `chunkWaypointIndex` es el índice dentro de `clusterWaypoints` (que se usó para `apiWaypoints`)
+            const originalWaypointData = clusterWaypoints[chunkWaypointIndex];
+            accumulatedWaypointOrderIndices.push(
+              originalWaypointData.originalIndex
+            );
+            combinedResults.ordered_waypoint_details.push(originalWaypointData); // Para mostrar en la UI
+          });
+        }
+
+        // Actualizar el origen para el siguiente chunk al final de este.
+        if (route.legs.length > 0) {
+          currentChunkOrigin = route.legs[route.legs.length - 1].end_location;
+        }
+      } else {
+        console.error("Error en el chunk", i + 1, result);
+        Swal.fire({
+          icon: "error",
+          title: `Error en el tramo del cluster ${i + 1}`,
+          text: result.status,
+        });
+        return; // Detener si un chunk falla
+      }
+      // Considera un pequeño delay si haces muchas llamadas para evitar OVER_QUERY_LIMIT
+      // await new Promise(resolve => setTimeout(resolve, 200));
+    }
+
+    // Asignar el waypoint_order global reconstruido
+    combinedResults.routes[0].waypoint_order = accumulatedWaypointOrderIndices;
+
+    console.log("Ruta combinada con clustering:", combinedResults);
+    displayCombinedRoute(combinedResults); // Tu función para mostrar la ruta
+
+    // Mostrar elementos de la UI
+    document.getElementById("secuencia-title").style.display = "block";
+    document.getElementById("exportExcelBtn").style.display = "block";
+    document.getElementById("secuencia").style.display = "block";
+    // ... (actualiza cómo muestras la secuencia usando combinedResults.ordered_waypoint_details)
+
+    // Actualizar la lista de secuencia en la UI
+    const secuenciaList = document.getElementById("secuencia"); // Asume que tienes un <ol id="secuencia"></ol>
+    secuenciaList.innerHTML = ""; // Limpiar
+    combinedResults.ordered_waypoint_details.forEach((wp, index) => {
+      const listItem = document.createElement("li");
+      listItem.textContent = `${index + 1}. ${wp.address}`; // Muestra la dirección original
+      secuenciaList.appendChild(listItem);
+    });
+  } catch (error) {
+    console.error("Error calculando la ruta completa con clustering:", error);
+    Swal.fire({
+      icon: "error",
+      title: "Error General",
+      text: error.message || "Ocurrió un error desconocido.",
+    });
+  }
+}
+
 function splitRouteIntoChunks(start, waypoints, end, maxPoints = 25) {
   const chunks = [];
   const maxWaypoints = maxPoints - 2;
@@ -604,7 +820,6 @@ function splitRouteIntoChunks(start, waypoints, end, maxPoints = 25) {
       end: chunkEnd,
     });
 
-    // Preparo el start del siguiente chunk
     currentStart = chunkEnd;
     i += maxWaypoints;
   }
@@ -693,23 +908,76 @@ async function calculateFullRoute(
   });
 }
 
-function requestRoute(start, waypoints, end, avoidHighways, avoidTolls) {
-  return new Promise((resolve) => {
+async function requestRoute(start, waypoints, end, avoidHighways, avoidTolls) {
+  return new Promise((resolve, reject) => {
+    // Cambiado a reject para errores
     directionsService.route(
       {
-        origin: start,
-        destination: end,
-        waypoints: waypoints,
+        origin: start, // Debe ser LatLng o Place
+        destination: end, // Debe ser LatLng o Place
+        waypoints: waypoints, // Array de {location: LatLng o Place, stopover: true}
         travelMode: google.maps.TravelMode.DRIVING,
         optimizeWaypoints: true,
         avoidHighways: avoidHighways,
         avoidTolls: avoidTolls,
       },
       (result, status) => {
-        resolve({ routes: result?.routes || [], status });
+        if (status === google.maps.DirectionsStatus.OK) {
+          resolve({ routes: result.routes, status });
+        } else {
+          // Resolvemos con el error para que calculateFullRoute lo maneje
+          resolve({ routes: [], status });
+        }
       }
     );
   });
+}
+
+function geocodeAddress(address) {
+  return new Promise((resolve, reject) => {
+    geocoder.geocode({ address: address }, (results, status) => {
+      if (status === google.maps.GeocoderStatus.OK && results[0]) {
+        resolve({
+          address: address, // Guardamos la dirección original por si acaso
+          location: results[0].geometry.location,
+        });
+      } else {
+        reject(new Error(`Geocoding failed for "${address}": ${status}`));
+      }
+    });
+  });
+}
+
+function calculateCentroid(points) {
+  // points es un array de objetos { location: google.maps.LatLng, ... }
+  if (!points || points.length === 0) return null;
+  let latSum = 0;
+  let lngSum = 0;
+  points.forEach((point) => {
+    latSum += point.location.lat();
+    lngSum += point.location.lng();
+  });
+  return new google.maps.LatLng(latSum / points.length, lngSum / points.length);
+}
+
+function findNearestPointInCluster(referenceLatLng, clusterPoints) {
+  // clusterPoints es un array de objetos { location: google.maps.LatLng, originalData: ..., originalIndex: ... }
+  if (!clusterPoints || clusterPoints.length === 0) return null;
+
+  let nearestPoint = null;
+  let minDistance = Infinity;
+
+  clusterPoints.forEach((point) => {
+    const distance = google.maps.geometry.spherical.computeDistanceBetween(
+      referenceLatLng,
+      point.location
+    );
+    if (distance < minDistance) {
+      minDistance = distance;
+      nearestPoint = point;
+    }
+  });
+  return nearestPoint;
 }
 
 //#endregion
@@ -730,8 +998,6 @@ function displayCombinedRoute(combinedResults) {
     });
     return;
   }
-
-  console.log(combinedResults);
 
   clearMarkers();
 
@@ -831,13 +1097,6 @@ function clearMarkers() {
   routeMarkers = [];
 }
 
-function clearDirectionalArrows() {
-  for (let arrow of directionArrows) {
-    arrow.setMap(null);
-  }
-  directionArrows = [];
-}
-
 function enhanceRouteDisplay(results) {
   // Limpiamos las polylines anteriores
   if (window.routePolyline) {
@@ -894,11 +1153,6 @@ function enhanceRouteDisplay(results) {
     // Dividimos el path en dos partes: ruta principal y último tramo
     mainPathPoints = path.slice(0, closestPointIndex + 1);
     finalSegmentPoints = path.slice(closestPointIndex);
-
-    console.log(
-      `Dividiendo la ruta en punto ${closestPointIndex} de ${path.length} puntos totales`
-    );
-    console.log(`Distancia a penúltima parada: ${closestDistance} metros`);
   } else {
     // Si solo hay un tramo, usamos todo el path para la ruta principal
     mainPathPoints = path;
@@ -1111,15 +1365,13 @@ function checkTollPointsOnRoute(results) {
   peajes.forEach((toll) => {
     const tollPosition = new google.maps.LatLng(toll.lat, toll.lng);
 
-    // Usar isLocationOnEdge para ver si el peaje está sobre la ruta
     const isOnRoute = google.maps.geometry.poly.isLocationOnEdge(
       tollPosition,
       polyline,
-      0.0001 // ~100 metros de tolerancia
+      0.0001
     );
 
     if (isOnRoute) {
-      // Evitar duplicados
       if (!peajesPasados.some((p) => p.nombre === toll.nombre)) {
         peajesPasados.push(toll);
       }
@@ -1567,8 +1819,6 @@ function displayRouteSequence(response, start, end, waypoints) {
     isStart: true,
   });
 
-  console.log(waypoints);
-
   waypointOrder.forEach((index, i) => {
     const waypointAddress = waypoints[index];
     orderedStops.push({
@@ -1629,7 +1879,7 @@ function displayRouteSequence(response, start, end, waypoints) {
   });
 
   currentOrderedStops = orderedStops;
-  console.log(currentOrderedStops);
+
   routeStepsDiv.appendChild(stopsContainer);
 }
 
